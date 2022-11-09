@@ -1,0 +1,70 @@
+esphome:
+  name: lum-iot34
+  comment: switchplate test yaml
+
+esp32:
+  board: firebeetle32
+
+wifi:
+
+web_server:
+
+#ota:
+#  password: !secret ota_password
+
+logger:
+  level: verbose
+
+external_components:
+  - source: github://nielsnl68/esphome-components
+  #- source:
+  #    type: local
+  #    path: C:\development\projects\esphome-components\components
+
+i2c:
+  scan: false
+
+pca963x:
+  model: pca9633
+
+light:
+  - platform: rgb
+    name: "Living Room Lights"
+    red: output_component1
+    green: output_component2
+    blue: output_component3
+    effects:
+      - strobe:
+          name: Error
+          colors:
+            - state: true
+              brightness: 100%
+              red: 100%
+              green: 00%
+              blue: 0%
+              duration: 500ms
+            - state: true
+              brightness: 100%
+              red: 0%
+              green: 100%
+              blue: 100%
+              duration: 250ms
+
+# Example output entry
+output:
+  - platform: pca963x
+    id: output_component1
+    channel: 0
+  - platform: pca963x
+    id: output_component2
+    channel: 1
+  - platform: pca963x
+    id: output_component3
+    channel: 2
+
+display:
+  - platform: AiP31068L
+    dimensions: 16x2
+    address: 0x3E
+    lambda: |-
+      it.print("Hello World!");
