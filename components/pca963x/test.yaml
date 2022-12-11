@@ -1,11 +1,12 @@
 esphome:
-  name: lum-iot34
+  name: lum-tester
   comment: switchplate test yaml
 
 esp32:
   board: firebeetle32
 
 wifi:
+  networks:
 
 web_server:
 
@@ -65,6 +66,127 @@ output:
 display:
   - platform: AiP31068L
     dimensions: 16x2
+    id: my_lcd
     address: 0x3E
+    user_characters:
+      - position: 0
+        data:
+          - 0b00100
+          - 0b01110
+          - 0b10101
+          - 0b00100
+          - 0b00100
+          - 0b00100
+          - 0b11100
+          - 0b00000
     lambda: |-
-      it.print("Hello World!");
+      id(my_lcd_menu).draw();
+      if (!id(my_lcd_menu).is_active())
+        it.print("Menu is not active");
+
+# Declare a LCD menu
+lcd_menu:
+  id: my_lcd_menu
+  display_id: my_lcd
+  active: true
+  mode: joystick 
+  mark_back: 0x08
+  mark_selected: 0x3e
+  mark_editing: 0x2a
+  mark_submenu: 0x7e
+  items:
+    - type: back
+      text: 'Back'
+    - type: label
+      text: 'Label 1'
+    - type: label
+      text: !lambda |-
+        return "Templated label";
+    - type: menu
+      text: 'My Submenu'
+      on_enter:
+        then:
+          lambda: 'ESP_LOGI("display_menu", "enter: %s", it->get_text().c_str());'
+      on_leave:
+        then:
+          lambda: 'ESP_LOGI("display_menu", "leave: %s", it->get_text().c_str());'
+      items:
+        - type: label
+          text: 'Label'
+        - type: back
+          text: 'Back'
+
+    - type: select
+      immediate_edit: false
+      text: 'My Color'
+      select: my_color
+
+    - type: number
+      text: 'My Number'
+      format: '%.2f'
+      number: my_number
+
+    - type: switch
+      immediate_edit: false
+      text: 'My Switch'
+      on_text: 'Bright'
+      off_text: 'Dark'
+      switch: my_switch
+
+    - type: command
+      text: 'Hide'
+      on_value:
+        then:
+          - display_menu.hide:
+
+select:
+  - platform: template
+    id: my_color
+    optimistic: true
+    options:
+      - 'Red'
+      - 'Green'
+      - 'Blue'
+
+
+number:
+  - platform: template
+    id: my_number
+    optimistic: true
+    min_value: 10.0
+    max_value: 20.0
+    step: 0.5
+    on_value:
+      then:
+        lambda: 'ESP_LOGI("number", "value: %f", x);'
+
+switch:
+  - platform: template
+    id: my_switch
+    optimistic: true
+
+button:
+  - platform: template
+    name: "go Up"
+    on_press:
+      - display_menu.up: my_lcd_menu
+  - platform: template
+    name: "go Down"
+    on_press:
+      - display_menu.down:
+  - platform: template
+    name: "go Left"
+    on_press:
+      - display_menu.left:
+  - platform: template
+    name: "go Right"
+    on_press:
+      - display_menu.right:
+  - platform: template
+    name: "Enter"
+    on_press:
+      - display_menu.enter:
+  - platform: template
+    name: "esc"
+    on_press:
+      - display_menu.show_main:
