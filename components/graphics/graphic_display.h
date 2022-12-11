@@ -1,8 +1,16 @@
 #pragma once
-#include "esphome/components/display/display_buffer.h"
-#include "esphome/components/spi/spi.h"
 
+#include "esphome/components/display/display_buffer.h"
+#include "esphome/core/hal.h"
 #include "Arduino_GFX_Library.h"
+
+#ifdef USE_ARDUINO
+#define USE_SPI_ARDUINO_BACKEND
+#endif
+
+#ifdef USE_SPI_ARDUINO_BACKEND
+#include <SPI.h>
+#endif
 
 namespace esphome {
 namespace graphics {
@@ -19,7 +27,7 @@ public:
     return display::DisplayType::DISPLAY_TYPE_COLOR;
   }
 
-  void set_Arduino_GFX(Arduino_GFX gfx) { this->gfx_ = gfx; }
+  void set_Arduino_GFX(Arduino_GFX *gfx) { this->gfx_ = gfx; }
 
   // TRANSACTION API / CORE DRAW API
   // These MAY be overridden by the subclass to provide device-specific
@@ -39,7 +47,7 @@ public:
                  uint16_t color) {
     this->gfx_->writeLine(x0, y0, x1, y1, color);
   }
-  void endWrite(void) { this->gfx_->endWrite(void); }
+  INLINE void endWrite(void) { this->gfx_->endWrite(); }
 
   void setRotation(uint8_t rotation) { this->gfx_->setRotation(rotation); }
   void invertDisplay(bool i) { this->gfx_->invertDisplay(i); }
@@ -143,7 +151,7 @@ public:
   }
   void drawXBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w,
                    int16_t h, uint16_t color) {
-    this->gfx_->void drawXBitmap(x, y, bitmap, w, h, color);
+    this->gfx_->drawXBitmap(x, y, bitmap, w, h, color);
   }
 
   void drawIndexedBitmap(int16_t x, int16_t y, uint8_t *bitmap,
@@ -226,7 +234,7 @@ public:
   void setTextSize(uint8_t s) { this->gfx_->setTextSize(s); }
   void setTextSize(uint8_t sx, uint8_t sy) { this->gfx_->setTextSize(sx, sy); }
   void setTextSize(uint8_t sx, uint8_t sy, uint8_t pixel_margin) {
-    this->gfx_->setTextSize(uint8_t sx, uint8_t sy, uint8_t pixel_margin);
+    this->gfx_->setTextSize(sx, sy, pixel_margin);
   }
 
   void setFont(const GFXfont *f = NULL) { this->gfx_->setFont(f); }
@@ -245,7 +253,7 @@ public:
   int16_t getCursorX(void) const { return this->gfx_->getCursorX(); }
   int16_t getCursorY(void) const { return this->gfx_->getCursorY(); };
 
-  void setTextColor(uint16_t c) { this->gfx_->; }
+  void setTextColor(uint16_t c) { this->gfx_->setTextColor(c); }
 
   void setTextColor(uint16_t c, uint16_t bg) {
     this->gfx_->setTextColor(c, bg);
@@ -275,6 +283,7 @@ protected:
   }
   int get_width_internal() override { return this->gfx_->width(); }
   int get_height_internal() override { return this->gfx_->height(); }
+  Arduino_GFX *gfx_{nullptr};
 };
 
 } // namespace graphics

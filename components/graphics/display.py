@@ -1,7 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
-from esphome.components import display, light
+from esphome.components import display
 from esphome.const import (
     CONF_COLOR_PALETTE,
     CONF_DC_PIN,
@@ -33,38 +33,41 @@ from esphome.schema_extractors import (
     schema_extractor_typed,
 )
 
-CONF_PAR_8 = "8BIT_PARALEL"
-CONF_PAR_16 = "16BIT_PARALEL"
+
+CODEOWNERS = ["@nielsnl68"]
+
+GRAPHICS_ns = cg.esphome_ns.namespace("graphics")
+GraphicDisplay = GRAPHICS_ns.class_(
+    "GraphicsDisplay", cg.PollingComponent, display.DisplayBuffer
+)
+
+
+
+CONF_PAR_8 = "8BIT_PARALLEL"
+CONF_PAR_16 = "16BIT_PARALLEL"
 CONF_LCD_8 = "8BIT_LCD_MODE"
 CONF_LCD_16 = "16BIT_LCD_MODE"
 CONF_SPI = "SPI"
 CONF_DATABUS = "databus"
 CONF_BACKLIGHT = "backlight"
-CONF_WR_PIN = "WR_pin"
-CONF_D0_PIN = "D0_pin"
-CONF_D1_PIN = "D1_pin"
-CONF_D2_PIN = "D2_pin"
-CONF_D3_PIN = "D3_pin"
-CONF_D4_PIN = "D4_pin"
-CONF_D5_PIN = "D5_pin"
-CONF_D6_PIN = "D6_pin"
-CONF_D7_PIN = "D7_pin"
-CONF_D8_PIN = "D8_pin"
-CONF_D9_PIN = "D9_pin"
-CONF_D10_PIN = "D10_pin"
-CONF_D11_PIN = "D11_pin"
-CONF_D12_PIN = "D12_pin"
-CONF_D13_PIN = "D13_pin"
-CONF_D14_PIN = "D14_pin"
-CONF_D15_PIN = "D15_pin"
+CONF_WR_PIN = "wr_pin"
+CONF_D0_PIN = "d0_pin"
+CONF_D1_PIN = "d1_pin"
+CONF_D2_PIN = "d2_pin"
+CONF_D3_PIN = "d3_pin"
+CONF_D4_PIN = "d4_pin"
+CONF_D5_PIN = "d5_pin"
+CONF_D6_PIN = "d6_pin"
+CONF_D7_PIN = "d7_pin"
+CONF_D8_PIN = "d8_pin"
+CONF_D9_PIN = "d9_pin"
+CONF_D10_PIN = "d10_pin"
+CONF_D11_PIN = "d11_pin"
+CONF_D12_PIN = "d12_pin"
+CONF_D13_PIN = "d13_pin"
+CONF_D14_PIN = "d14_pin"
+CONF_D15_PIN = "d15_pin"
 CONF_IS_IPS_DISPLAY = "is_ips_display"
-
-CODEOWNERS = ["@nielsnl68"]
-
-GRAPHICS_ns = cg.esphome_ns.namespace("Graphics")
-GraphicDisplay = GRAPHICS_ns.class_(
-    "GraphicDisplay", cg.PollingComponent, display.DisplayBuffer
-)
 
 # Arduino_GC9A01(*bus, rst, r, ips [, w, h]);
 # Arduino_GC9106(*bus, rst, r, ips [, w, h]);
@@ -170,21 +173,23 @@ DATABUSES = {
 def databus_schema(schemas, **kwargs):
     """Create a schema that has a key to distinguish between schemas"""
     key = kwargs.pop("key", CONF_DATABUS)
-    default_schema_option = kwargs.pop("default", None)
+    default_schema_option = kwargs.pop("default_type", None)
 
     if CORE.is_esp32:
         variant = get_esp32_variant()
         if variant in DATABUSES:
-            key_validator = cv.enum(DATABUSES[variant], space="_", upper=True)
+            ENUM_LIST = DATABUSES[variant]
         else:
             raise NotImplementedError
     elif CORE.is_esp8266:
-        key_validator =  cv.enum(DATABUSES[PLATFORM_ESP8266], space="_", upper=True)
+        ENUM_LIST = DATABUSES[PLATFORM_ESP8266]
     elif CORE.is_rp2040:
-        key_validator =  cv.enum(DATABUSES[PLATFORM_RP2040], space="_", upper=True)
+        ENUM_LIST =  DATABUSES[PLATFORM_RP2040]
     else:
         raise NotImplementedError
 
+    key_validator = cv.enum(ENUM_LIST, space="_", upper=True)
+    
     def validator(value):
         if not isinstance(value, dict):
             raise cv.Invalid("Value must be dict")
@@ -215,69 +220,112 @@ def validate_rotation(value):
 
 COMMON_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(GraphicDisplay),
-    cv.Optional(CONF_ROTATION): validate_rotation,
+    cv.Optional(CONF_ROTATION, default=0): validate_rotation,
 
     cv.Required(CONF_MODEL): cv.enum(MODELS, upper=True, space="_"),
-    cv.Optional(CONF_CS_PIN, default= -1)  : pins.gpio_output_pin_schema, 
-    cv.Optional(CONF_DC_PIN, default= -1): pins.gpio_output_pin_schema,
-    cv.Optional(CONF_RESET_PIN, default= -1): pins.gpio_output_pin_schema,
-    cv.Optional(CONF_BACKLIGHT): pins.gpio_output_pin_schema,
+    cv.Optional(CONF_CS_PIN)  : pins.internal_gpio_output_pin_number, 
+    cv.Optional(CONF_DC_PIN): pins.internal_gpio_output_pin_number,
+    cv.Optional(CONF_RESET_PIN): pins.internal_gpio_output_pin_number,
+    cv.Optional(CONF_BACKLIGHT): pins.internal_gpio_output_pin_number,
     cv.Optional(CONF_IS_IPS_DISPLAY, default=False):cv.boolean,
     cv.Optional(CONF_DIMENSIONS): cv.dimensions,
 })
 
 
 CONFIG_SCHEMA = cv.All(
-    display.FULL_DISPLAY_SCHEMA.extend(
+
         databus_schema({
             CONF_SPI: COMMON_SCHEMA.extend({
-                    cv.Optional(CONF_CLK_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_MOSI_PIN, default= -1): pins.gpio_output_pin_schema,
-                    cv.Optional(CONF_MISO_PIN, default= -1): pins.gpio_output_pin_schema,
+                    cv.Optional(CONF_CLK_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_MOSI_PIN): pins.internal_gpio_output_pin_number,
+                    cv.Optional(CONF_MISO_PIN): pins.internal_gpio_output_pin_number,
             }), 
             CONF_PAR_8: COMMON_SCHEMA.extend({
-                    cv.Optional(CONF_WR_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D0_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D1_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D2_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D3_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D4_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D5_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D6_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D7_PIN, default= -1) : pins.gpio_output_pin_schema, 
+                    cv.Optional(CONF_WR_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D0_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D1_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D2_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D3_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D4_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D5_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D6_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D7_PIN) : pins.internal_gpio_output_pin_number, 
             }), 
             CONF_PAR_16: COMMON_SCHEMA.extend({
-                    cv.Optional(CONF_WR_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D0_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D1_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D2_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D3_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D4_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D5_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D6_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D7_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D8_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D9_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D10_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D11_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D12_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D13_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D14_PIN, default= -1) : pins.gpio_output_pin_schema, 
-                    cv.Optional(CONF_D15_PIN, default= -1) : pins.gpio_output_pin_schema, 
+                    cv.Optional(CONF_WR_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D0_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D1_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D2_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D3_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D4_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D5_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D6_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D7_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D8_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D9_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D10_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D11_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D12_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D13_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D14_PIN) : pins.internal_gpio_output_pin_number, 
+                    cv.Optional(CONF_D15_PIN) : pins.internal_gpio_output_pin_number, 
             }),
-        }),
-    ).extend(cv.polling_component_schema("1s")),
-    cv.has_at_most_one_key(CONF_PAGES, CONF_LAMBDA),
-)
+        },
+        key="databus",
+        default_type="SPI",
+        space="_",
+        upper=True)
+    )
+
+GRAPHICS_PINS = [
+    CONF_DC_PIN,
+    CONF_CS_PIN,
+    CONF_CLK_PIN,
+    CONF_MISO_PIN,
+    CONF_MOSI_PIN,
+    CONF_RESET_PIN,
+    CONF_WR_PIN,
+    CONF_D0_PIN ,
+    CONF_D1_PIN ,
+    CONF_D2_PIN ,
+    CONF_D3_PIN ,
+    CONF_D4_PIN ,
+    CONF_D5_PIN ,
+    CONF_D6_PIN ,
+    CONF_D7_PIN ,
+    CONF_D8_PIN ,
+    CONF_D9_PIN ,
+    CONF_D10_PIN,
+    CONF_D11_PIN,
+    CONF_D12_PIN,
+    CONF_D13_PIN,
+    CONF_D14_PIN,
+    CONF_D15_PIN,
+]
 
 @coroutine_with_priority(90.0)
 async def to_code(config):
-    print(config)
+
+    cg.add_library("moononournation/GFX Library for Arduino", "~1.3.1")
+    if CORE.using_arduino:
+        cg.add_library("SPI", None)
+
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
-    cg.add_library("moononournation/Arduino_GFX", "1.3.1")
+    
+    for pin in GRAPHICS_PINS:
+        if pin not in config:
+            config[pin] = -1
 
-    databus = config[CONF_DATABUS]
+    bus = config[CONF_DATABUS]
+    if CORE.is_esp32:
+        variant = get_esp32_variant()
+        databus = DATABUSES[variant][bus]
+    elif CORE.is_esp8266:
+        databus = DATABUSES[PLATFORM_ESP8266][bus]
+    elif CORE.is_rp2040:
+        databus =  DATABUSES[PLATFORM_RP2040][bus]
+
     match databus[1]:
         case 0:
             # Arduino_ESP8266SPI( dc,  cs); // Constructor
@@ -316,16 +364,18 @@ async def to_code(config):
             if config[CONF_MISO_PIN] == -1: config[CONF_MISO_PIN] = cg.RawExpression("PIN_SPI0_MISO") 
             bus = databus[0].new(config[CONF_DC_PIN], config[CONF_CS_PIN], config[CONF_CLK_PIN], config[CONF_MOSI_PIN], config[CONF_MISO_PIN])
 
-    model = config[CONF_MODEL]
-    
+    model = MODELS[config[CONF_MODEL]]
+
     if model[1] == 0 and CONF_DIMENSIONS in config:
-        gfx = model[0].new( bus,config[CONF_RESET_PIN], config[CONF_ROTATION], config[CONF_IS_IPS_DISPLAY], config[CONF_DIMENSIONS][0], config[CONF_DIMENSIONS][1])
+        gfx = model[0].new(bus, config[CONF_RESET_PIN], config[CONF_ROTATION], config[CONF_IS_IPS_DISPLAY], config[CONF_DIMENSIONS][0], config[CONF_DIMENSIONS][1])
     elif model[1] <= 1:
-        gfx = model[0].new( bus,config[CONF_RESET_PIN], config[CONF_ROTATION], config[CONF_IS_IPS_DISPLAY])
+        gfx = model[0].new(bus, config[CONF_RESET_PIN], config[CONF_ROTATION], config[CONF_IS_IPS_DISPLAY])
     elif model[1] == 2 and CONF_DIMENSIONS in config:
-        gfx = model[0].new( bus,config[CONF_RESET_PIN], config[CONF_ROTATION], config[CONF_DIMENSIONS][0], config[CONF_DIMENSIONS][1])
+        gfx = model[0].new(bus, config[CONF_RESET_PIN], config[CONF_ROTATION], config[CONF_DIMENSIONS][0], config[CONF_DIMENSIONS][1])
     else:
-        gfx = model[0].new( bus,config[CONF_RESET_PIN], config[CONF_ROTATION])
+        gfx = model[0].new(bus, config[CONF_RESET_PIN], config[CONF_ROTATION])
+
+    cg.add(var.set_Arduino_GFX(gfx))
 
     del config[CONF_ROTATION]
     
