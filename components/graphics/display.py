@@ -305,10 +305,11 @@ GRAPHICS_PINS = [
 
 @coroutine_with_priority(90.0)
 async def to_code(config):
-
-    cg.add_library("moononournation/GFX Library for Arduino", "~1.3.1")
     if CORE.using_arduino:
         cg.add_library("SPI", None)
+        
+    cg.add_library("moononournation/GFX Library for Arduino", "~1.3.1")
+
 
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
