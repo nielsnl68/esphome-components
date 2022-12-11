@@ -1,0 +1,73 @@
+esphome:
+  name: esphome-web-c0b554
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+external_components:
+  - source: # github://nielsnl68/SwitchPlate@main
+      type: local
+      path: C:\development\projects\esphome-components\components
+    refresh: 10s
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+wifi:
+  ssid: LumenIOT24
+  password: Lum3nS0fT
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esphome-Web-C0B554"
+
+captive_portal:
+
+i2c:
+  - id: i2c_0
+    sda: GPIO32
+    scl: GPIO26
+
+display:
+  - platform: graphics
+    model: ili9341
+    databus: spi
+    clk_pin: 4
+    miso_pin: 23
+    dc_pin: 27
+    cs_pin: 5
+    reset_pin: 33
+
+  - platform: graphics
+    model: ILI9225
+    databus: 8bit parallel
+    dc_pin: 27
+    cs_pin: 5
+    wr_pin: 23
+    d0_pin: 40
+    d1_pin: 40
+    d2_pin: 40
+    d3_pin: 40
+    d4_pin: 40
+    d5_pin: 40
+    d6_pin: 40
+    d7_pin: 40
+
+  - platform: graphics
+    model: HX8369A
+    databus: spi
+    clk_pin: 4
+    miso_pin: 23
+    dc_pin: 27
+    cs_pin: 5
+    reset_pin: 33
+    dimensions: 128x128
+
+
