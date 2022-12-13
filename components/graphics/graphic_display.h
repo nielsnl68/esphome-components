@@ -15,7 +15,90 @@
 namespace esphome {
 namespace graphics {
 
-class GraphicsDisplay : public display::DisplayBuffer, public PollingComponent {
+
+struct Rect {
+  static const int16_t RECT_NO_SET = 32766;
+  int16_t x;  ///< X coordinate of corner
+  int16_t y;  ///< Y coordinate of corner
+  int16_t w;  ///< Width of region
+  int16_t h;  ///< Height of region
+
+  inline Rect() ALWAYS_INLINE : x(RECT_NO_SET), y(RECT_NO_SET), w(RECT_NO_SET), h(RECT_NO_SET) {}  // NOLINT
+  inline Rect(int16_t x, int16_t y, int16_t w, int16_t h) ALWAYS_INLINE : x(x), y(y), w(w), h(h) {}
+  inline int16_t x2() { return this->x + this->w; }  ///< X coordinate of corner
+  inline int16_t y2() { return this->y + this->h; }  ///< Y coordinate of corner
+
+  inline bool is_set() ALWAYS_INLINE { return (this->h != RECT_NO_SET) && (this->w != RECT_NO_SET); }
+
+  void expand(int16_t width, int16_t height);
+  void join(Rect rect);
+  void substract(Rect rect);
+  bool inside(int16_t x, int16_t y, bool absolute = false);
+  bool inside(Rect rect, bool absolute = false);
+  void info(const std::string &prefix = "rect info:");
+};
+
+
+class Clipping {
+  public:
+  ///
+  /// Set the clipping rectangle for further drawing
+  ///
+  /// \param[in]  rect:       Pointer to Rect for clipping (or NULL for entire screen)
+  ///
+  /// \return true if success, false if error
+  ///
+  void push_clipping(Rect rect);
+  void push_clipping(int16_t left, int16_t top, int16_t right, int16_t bottom) {
+    push_clipping(Rect(left, top, right, bottom));
+  };
+
+  ///
+  /// Add a rectangular region to the invalidation region
+  /// - This is usually called when an element has been modified
+  ///
+  /// \param[in]  rect: Rectangle to add to the invalidation region
+  ///
+  /// \return none
+  ///
+  void add_clipping(Rect rect);
+  void add_clipping(int16_t left, int16_t top, int16_t right, int16_t bottom) {
+    this->add_clipping(Rect(left, top, right, bottom));
+  };
+
+  ///
+  /// substract a rectangular region to the invalidation region
+  /// - This is usually called when an element has been modified
+  ///
+  /// \param[in]  rect: Rectangle to add to the invalidation region
+  ///
+  /// \return none
+  ///
+  void substract_clipping(Rect rect);
+  void substract_clipping(uint16_t left, uint16_t top, uint16_t right, uint16_t bottom) {
+    this->substract_clipping(Rect(left, top, right, bottom));
+  };
+
+  ///
+  /// Reset the invalidation region
+  ///
+  /// \return none
+  ///
+  void pop_clipping();
+
+  ///
+  /// Get the current the clipping rectangle
+  ///
+  ///
+  /// \return rect for active clipping region
+  ///
+  Rect get_clipping();
+  protected:
+    std::vector<Rect> clipping_rectangle_;
+};
+
+
+class GraphicsDisplay : public display::DisplayBuffer, public PollingComponent, public Clipping, public Print {
 public:
   void dump_config() override;
   void setup() override;
@@ -279,6 +362,8 @@ public:
 
 protected:
   void draw_absolute_pixel_internal(int x, int y, Color color) override {
+    if (!this->get_clipping().inside(x, y))
+      return;  // NOLINT
     this->gfx_->writePixelPreclipped(x, y, color565(color));
   }
   int get_width_internal() override { return this->gfx_->width(); }

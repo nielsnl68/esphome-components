@@ -12,44 +12,43 @@ external_components:
       path: C:\development\projects\esphome-components\components
     refresh: 10s
 
-
 logger:
   level: verbose
 
 display:
-  - platform: graphics
-    model: ili9341
-    databus: spi
-    clk_pin: 4
-    miso_pin: 23
-    dc_pin: 27
-    cs_pin: 5
-    reset_pin: 33
+  platform: graphics
+  model: ST7796
+  databus: spi
+  miso_pin: 12
+  mosi_pin: 13
+  clk_pin: 14
+  cs_pin: 15
+  dc_pin: 21
+  reset_pin: 22
+  #backlight: tft_backlight
+  rotation: 270
+  lambda: |-
+      it.fill(COLOR_BLACK);
+      it.print(0, 0, id(my_font), id(my_red), TextAlign::TOP_LEFT, "Hello World!");
 
-  - platform: graphics
-    model: ILI9225
-    databus: 8bit parallel
-    dc_pin: 27
-    cs_pin: 5
-    wr_pin: 23
-    d0_pin: 33
-    d1_pin: 33
-    d2_pin: 33
-    d3_pin: 33
-    d4_pin: 33
-    d5_pin: 33
-    d6_pin: 33
-    d7_pin: 33
+color:
+  - id: my_red
+    red: 75%
 
-  - platform: graphics
-    model: HX8369A
-    databus: spi
-    clk_pin: 4
-    miso_pin: 23
-    dc_pin: 27
-    cs_pin: 5
-    reset_pin: 33
-    dimensions: 128x128
-    rotation: 270
+font:
+  - file: "gfonts://Roboto"
+    id: my_font
+    size: 20
 
+# Example configuration entry
+output:
+  - platform: ledc
+    pin: GPIO23
+    id: gpio_backlight
 
+# Example usage in a light
+light:
+  - platform: monochromatic
+    output: gpio_backlight
+    id: tft_backlight
+    restore_mode: RESTORE_AND_ON 
