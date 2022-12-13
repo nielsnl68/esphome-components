@@ -225,7 +225,7 @@ COMMON_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
             cv.Optional(CONF_CS_PIN): pins.internal_gpio_output_pin_number,
             cv.Optional(CONF_DC_PIN): pins.internal_gpio_output_pin_number,
             cv.Optional(CONF_RESET_PIN): pins.internal_gpio_output_pin_number,
-            #    cv.Optional(CONF_BACKLIGHT): cv.use_id(light.LightState),
+            cv.Optional(CONF_BACKLIGHT): cv.use_id(light.LightState),
             cv.Optional(CONF_IS_IPS_DISPLAY, default=False): cv.boolean,
             cv.Optional(CONF_DIMENSIONS): cv.dimensions,
         }
