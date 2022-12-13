@@ -38,6 +38,7 @@ GRAPHICS_ns = cg.esphome_ns.namespace("graphics")
 GraphicDisplay = GRAPHICS_ns.class_(
     "GraphicsDisplay", cg.PollingComponent, display.DisplayBuffer
 )
+GraphicDisplayRef = GraphicDisplay.operator("ref")
 
 
 CONF_PAR_8 = "8BIT_PARALLEL"
@@ -229,7 +230,7 @@ COMMON_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
             cv.Optional(CONF_IS_IPS_DISPLAY, default=False): cv.boolean,
             cv.Optional(CONF_DIMENSIONS): cv.dimensions,
         }
-    )
+    ).extend(cv.polling_component_schema("1s"))
 
 
 
@@ -282,7 +283,7 @@ CONFIG_SCHEMA = cv.All(
         default_type="SPI",
         space="_",
         upper=True,
-    ).extend(cv.polling_component_schema("1s")),
+    ),
     cv.has_at_most_one_key(CONF_PAGES, CONF_LAMBDA),
 )
 
@@ -316,10 +317,11 @@ GRAPHICS_PINS = [
 
 @coroutine_with_priority(90.0)
 async def to_code(config):
+    cg.add_define("DISABLE_COLOR_DEFINES")
     if CORE.using_arduino:
         cg.add_library("SPI", None)
-
-    cg.add_library("moononournation/GFX Library for Arduino", "~1.3.1")
+        cg.add_library("WIRE", None)
+    cg.add_library("GFX Library for Arduino", "~1.3.1","https://github.com/moononournation/Arduino_GFX.git")
 
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -456,7 +458,7 @@ async def to_code(config):
 
     if CONF_LAMBDA in config:
         lambda_ = await cg.process_lambda(
-            config[CONF_LAMBDA], [(display.DisplayBufferRef, "it")], return_type=cg.void
+            config[CONF_LAMBDA], [(GraphicDisplayRef, "it")], return_type=cg.void
         )
         cg.add(var.set_writer(lambda_))
 

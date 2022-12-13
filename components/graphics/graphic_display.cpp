@@ -132,7 +132,7 @@ void GraphicsDisplay::dump_config() {
 
 void GraphicsDisplay::setup() {
     this->gfx_->begin();
-    this->gfx_->fillScreen(RED);
+    this->gfx_->fillScreen(0x0000);
 
 }
 

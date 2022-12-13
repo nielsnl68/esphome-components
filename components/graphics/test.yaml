@@ -25,11 +25,12 @@ display:
   cs_pin: 15
   dc_pin: 21
   reset_pin: 22
-  #backlight: tft_backlight
+  backlight: tft_backlight
   rotation: 270
   lambda: |-
-      it.fill(COLOR_BLACK);
-      it.print(0, 0, id(my_font), id(my_red), TextAlign::TOP_LEFT, "Hello World!");
+      it.setCursor(100,100);
+      it.setTextColor(0xFFFF,0x0000);
+      it.print("Hello World!");
 
 color:
   - id: my_red
