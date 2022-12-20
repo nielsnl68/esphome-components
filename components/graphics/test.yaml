@@ -28,9 +28,11 @@ display:
   backlight: tft_backlight
   rotation: 270
   lambda: |-
-      it.setCursor(100,100);
-      it.setTextColor(0xFFFF,0x0000);
+      it.set_cursor(100,100);
+      it.set_text_color(0xFFFF,0x0F00);
       it.print("Hello World!");
+
+psram:
 
 color:
   - id: my_red

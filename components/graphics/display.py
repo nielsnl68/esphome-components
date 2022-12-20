@@ -17,6 +17,7 @@ from esphome.const import (
     CONF_DIMENSIONS,
     PLATFORM_ESP8266,
     PLATFORM_RP2040,
+    CONF_AUTO_CLEAR_ENABLED,
 )
 from esphome.core import HexInt
 from esphome.core import CORE, coroutine_with_priority
@@ -33,13 +34,14 @@ from esphome.schema_extractors import (
 
 
 CODEOWNERS = ["@nielsnl68"]
+AUTO_LOAD = ["psram"]
+
 
 GRAPHICS_ns = cg.esphome_ns.namespace("graphics")
 GraphicDisplay = GRAPHICS_ns.class_(
     "GraphicsDisplay", cg.PollingComponent, display.DisplayBuffer
 )
 GraphicDisplayRef = GraphicDisplay.operator("ref")
-
 
 CONF_PAR_8 = "8BIT_PARALLEL"
 CONF_PAR_16 = "16BIT_PARALLEL"
@@ -66,6 +68,7 @@ CONF_D13_PIN = "d13_pin"
 CONF_D14_PIN = "d14_pin"
 CONF_D15_PIN = "d15_pin"
 CONF_IS_IPS_DISPLAY = "is_ips_display"
+CONF_USE_CANVAS = "use_canvas"
 
 # Arduino_GC9A01(*bus, rst, r, ips [, w, h]);
 # Arduino_GC9106(*bus, rst, r, ips [, w, h]);
@@ -229,6 +232,9 @@ COMMON_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
             cv.Optional(CONF_BACKLIGHT): cv.use_id(light.LightState),
             cv.Optional(CONF_IS_IPS_DISPLAY, default=False): cv.boolean,
             cv.Optional(CONF_DIMENSIONS): cv.dimensions,
+            cv.Optional(CONF_LAMBDA): cv.lambda_,
+            cv.Optional(CONF_AUTO_CLEAR_ENABLED, default=True): cv.boolean,
+            cv.Optional(CONF_USE_CANVAS, default=True): cv.boolean,
         }
     ).extend(cv.polling_component_schema("1s"))
 
@@ -317,11 +323,12 @@ GRAPHICS_PINS = [
 
 @coroutine_with_priority(90.0)
 async def to_code(config):
-    cg.add_define("DISABLE_COLOR_DEFINES")
+    cg.add_build_flag("-DDISABLE_COLOR_DEFINES")
+
     if CORE.using_arduino:
         cg.add_library("SPI", None)
         cg.add_library("WIRE", None)
-    cg.add_library("GFX Library for Arduino", "~1.3.1","https://github.com/moononournation/Arduino_GFX.git")
+    cg.add_library("GFX Library for Arduino", "~1.3.1","https://github.com/nielsnl68/Arduino_GFX.git")
 
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -336,7 +343,7 @@ async def to_code(config):
         databus = DATABUSES[variant][bus]
     elif CORE.is_esp8266:
         databus = DATABUSES[PLATFORM_ESP8266][bus]
-    elif CORE.is_rp2040:
+    else:
         databus = DATABUSES[PLATFORM_RP2040][bus]
 
     match databus[1]:
@@ -450,11 +457,15 @@ async def to_code(config):
     else:
         gfx = model[0].new(bus, config[CONF_RESET_PIN], config[CONF_ROTATION])
 
-    cg.add(var.set_Arduino_GFX(gfx))
+    cg.add(var.set_Arduino_GFX(gfx, config[CONF_USE_CANVAS]))
 
     del config[CONF_ROTATION]
 
-    await display.register_display(var, config)
+    if CONF_ROTATION in config:
+        cg.add(var.set_rotation(DISPLAY_ROTATIONS[config[CONF_ROTATION]]))
+
+    if CONF_AUTO_CLEAR_ENABLED in config:
+        cg.add(var.set_auto_clear(config[CONF_AUTO_CLEAR_ENABLED]))
 
     if CONF_LAMBDA in config:
         lambda_ = await cg.process_lambda(
@@ -463,6 +474,6 @@ async def to_code(config):
         cg.add(var.set_writer(lambda_))
 
 
-#    if CONF_BACKLIGHT in config:
-#        reset = await cg.get_variable(config[CONF_BACKLIGHT])
-#        cg.add(var.set_backlight(reset))
+    if CONF_BACKLIGHT in config:
+        reset = await cg.get_variable(config[CONF_BACKLIGHT])
+        cg.add(var.set_backlight(reset))
