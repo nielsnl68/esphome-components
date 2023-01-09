@@ -4,7 +4,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation, core
 from esphome.automation import maybe_simple_id
-from esphome.components import color, display, font, image, time, touchscreen
+from esphome.components import color, display, font, image, time, touchscreen, graphics
 from esphome.const import (
     CONF_FORMAT,
     CONF_ID,
@@ -26,6 +26,7 @@ AUTO_LOAD = [
     "binary_sensor",
     "touchscreen",
     "display",
+    "graphics"
     "font",
     "color",
 ]
@@ -629,7 +630,7 @@ CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(SwitchPlate),
-            cv.Optional(CONF_DISPLAY_ID): cv.use_id(display.DisplayBuffer),
+            cv.Optional(CONF_DISPLAY_ID): cv.use_id(graphics.GraphicDisplay),
             cv.Optional(touchscreen.CONF_TOUCHSCREEN_ID): cv.use_id(
                 touchscreen.Touchscreen
             ),

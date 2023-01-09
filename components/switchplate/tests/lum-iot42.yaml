@@ -16,15 +16,14 @@ psram:
 
 external_components:
   - source: github://pr#3796
-    components: [display, image]
+    components: [image]
     refresh: 10s
 
   - source: # github://nielsnl68/SwitchPlate@main
       type: local
-      path: C:\development\projects\switchplate\components
-    components: [switchplate, ili9xxx]
-    refresh: 10s
-
+      path: C:\development\projects\esphome-components\components
+    components: [switchplate, graphics]
+    refresh: 0s
 
 logger:
   level: verbose
