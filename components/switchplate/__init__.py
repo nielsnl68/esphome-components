@@ -26,7 +26,6 @@ AUTO_LOAD = [
     "binary_sensor",
     "touchscreen",
     "display",
-    "graphics"
     "font",
     "color",
 ]
