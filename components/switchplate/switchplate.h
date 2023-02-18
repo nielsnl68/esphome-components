@@ -541,7 +541,10 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
   SwitchPlate *plate() { return this; }
 
   void redraw() {
-    defer([this]() { ((PollingComponent *) (this->display_))->update(); });
+    ESP_LOGV(TAG, "  -----<<<< ReDraw >>>>------");
+    defer([this]() {
+      // ((PollingComponent *) (this->display_))->update();
+      });
   }
 
  protected:
