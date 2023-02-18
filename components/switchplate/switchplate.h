@@ -17,7 +17,7 @@ using display::DisplayBuffer;
 using display::Rect;
 using display::Image;
 using display::Font;
-using display::GradientDirection;
+//using display::GradientDirection;
 using display::TextAlign;
 using touchscreen::TouchPoint;
 using touchscreen::TouchListener;
@@ -774,15 +774,17 @@ class SwitchPlateItem : public SwitchPlateBase {
 
   void set_disable_style();
 
-  bool get_color_definition(uint32_t style, Color &from, Color &to, GradientDirection &dir) {
+  bool get_color_definition(uint32_t style, Color &from) { // , Color &to, GradientDirection &dir
     if (this->has_style(style | Style::COLOR, this->status_)) {
       from = this->get_style(style | Style::COLOR, this->status_).color_;
+      /*
       to = from;
       dir = GradientDirection::GRADIENT_NONE;
       if (this->has_style(style | Style::COLOR | Style::TO, this->status_)) {
         to = this->get_style(style | Style::COLOR | Style::TO, this->status_).color_;
         dir = (GradientDirection) this->get_style(style | Style::COLOR | Style::DIRECTION, this->status_).direction_;
       }
+      */
       return true;
     }
     return false;
@@ -799,14 +801,14 @@ class SwitchPlateItem : public SwitchPlateBase {
 
   void show_background(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t radius) {
     Color from, to;
-    GradientDirection dir = GradientDirection::GRADIENT_NONE;
+    // GradientDirection dir = GradientDirection::GRADIENT_NONE;
 
-    if (this->get_color_definition(Style::BACKGROUND, from, to, dir)) {
-      display()->filled_rectangle(x, y, width, height, radius, from, to, dir);
+    if (this->get_color_definition(Style::BACKGROUND, from/* , to, dir */)) {
+      display()->filled_rectangle(x, y, width, height, /*radius,*/ from/* , to, dir */);
     }
 
-    if (this->get_color_definition(Style::BORDER_COLOR, from, to, dir)) {
-      display()->rectangle(x, y, width, height, radius, from, to, dir);
+    if (this->get_color_definition(Style::BORDER_COLOR, from/* , to, dir */)) {
+      display()->rectangle(x, y, width, height, /*radius,*/ from/* , to, dir */);
     }
   }
 
@@ -928,7 +930,7 @@ class SwitchPlateGroup : public SwitchPlateItem {
         for (auto *widget : this->widgets_) {
           widget->call_show();
         }
-        display()->pop_clipping();
+        display()->end_clipping();
       }
     }
     clear_redraw();
@@ -1016,9 +1018,9 @@ class SwitchPlateLabel : public SwitchPlateItem {
     Align align = this->get_style(Style::TEXT_ALIGN).align_;
     Font *font = this->get_style(Style::TEXT_FONT).font_;
     Color from, to;
-    GradientDirection dir = GradientDirection::GRADIENT_NONE;
+   //  GradientDirection dir = GradientDirection::GRADIENT_NONE;
 
-    this->get_color_definition(Style::TEXT, from, to, dir);
+    this->get_color_definition(Style::TEXT, from/* , to, dir */);
     show_background();
     calc_text_alignment(font, align, x, y);
     display()->print(x, y, font, from, (TextAlign) align, text().c_str());
@@ -1215,9 +1217,9 @@ class SwitchPlateSwitch : public SwitchPlateButton {
     }
     show_background(this->x(), this->y(), width, height, radius);
     Color from, to;
-    GradientDirection dir = GradientDirection::GRADIENT_NONE;
+   //  GradientDirection dir = GradientDirection::GRADIENT_NONE;
 
-    this->get_color_definition(Style::FOREGROUND, from, to, dir);
+    this->get_color_definition(Style::FOREGROUND, from/* , to, dir */);
     if (status_.selected == 0) {
       x_off = x() + 2;
       y_off = y() + 2;
@@ -1226,7 +1228,7 @@ class SwitchPlateSwitch : public SwitchPlateButton {
       radius = radius - 2;
     }
 
-    display()->filled_rectangle(x_off, y_off, ribben, ribben, radius, from, to, dir);
+    display()->filled_rectangle(x_off, y_off, ribben, ribben, /*radius,*/ from/* , to, dir*/);
   };
 };
 
