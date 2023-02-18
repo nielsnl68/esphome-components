@@ -541,7 +541,7 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
   SwitchPlate *plate() { return this; }
 
   void redraw() {
-    defer([this]() { this->display_->call_update(); });
+    defer([this]() { ((Component) this->display_)->update(); });
   }
 
  protected:
@@ -944,7 +944,7 @@ class SwitchPlateGroup : public SwitchPlateItem {
     if (this->is_visible()) {
       for (auto *widget : this->widgets_) {
         if (widget->need_redrawing()) {
-          r.join(widget->get_boundry());
+          r.extend(widget->get_boundry());
         }
       }
     }
