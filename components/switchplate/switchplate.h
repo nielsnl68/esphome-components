@@ -693,7 +693,7 @@ class SwitchPlateItem : public SwitchPlateBase {
       } else {
         result = calc_child_clipping();
         if (result.is_set()) {
-          result.substract(this->get_boundry());
+          result.shrink(this->get_boundry());
         }
       }
     }
@@ -703,7 +703,7 @@ class SwitchPlateItem : public SwitchPlateBase {
   SwitchPlateBase *check_touch(TouchInfo tp, Rect parent) {
     if (this->status_.visible && !this->status_.disabled) {
       Rect r = this->get_boundry();
-      r.substract(parent);
+      r.shrink(parent);
       bool touched = r.inside(tp.x, tp.y);
       ESP_LOGV("SwitchPlate", "    =====> L touched: %s, clickable: %s", YESNO(touched),
                YESNO(this->status_.clickable));
@@ -908,7 +908,7 @@ class SwitchPlateGroup : public SwitchPlateItem {
   SwitchPlateBase *check_touch(TouchInfo tp, Rect parent) override {
     Rect r = this->get_boundry();
     SwitchPlateBase *check;
-    r.substract(parent);
+    r.shrink(parent);
     if (r.is_set() && (tp.state == TouchState::Pressed)) {
       for (auto it = this->widgets_.rbegin(); it != this->widgets_.rend(); ++it) {
         check = (*it)->check_touch(tp, r);

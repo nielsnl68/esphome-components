@@ -216,7 +216,7 @@ void SwitchPlateItem::show_image(int16_t offset_x, int16_t offset_y, Image *imag
   int16_t x_org = r.x, y_org = r.y;
   Rect clip = display()->get_clipping();
   //clip.info("clip");
-  r.substract(clip);
+  r.shrink(clip);
   r.info("Cliped widget");
   //ESP_LOGI(TAG,"x_org:%d , y_org:%d | offset_x:%d, offset_x:%d | width:%d, height:%d ",offset_x, offset_y, x_org, y_org, height, width);
   x_org = x_org - r.x;
