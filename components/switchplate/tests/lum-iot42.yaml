@@ -1,6 +1,6 @@
 substitutions:
   device: lum-iot42
-  comment: display TFT 35
+  comment: display TFT 35 ili9488
 
 esphome:
   name: ${device}

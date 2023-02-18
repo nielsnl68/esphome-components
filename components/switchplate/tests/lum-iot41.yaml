@@ -12,17 +12,10 @@ esphome:
 
 esp32:
   board: esp-wrover-kit
-  framework:
-    type: arduino
-    version: 2.0.4
-    platform_version: 4.4.0
 
 ota:
 
 external_components:
-  - source: github://pr#3796
-    components: [display, image]
-    refresh: 10s
   - source: github://pr#3795
     components: [ili9xxx]
     refresh: 10s
