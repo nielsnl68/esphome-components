@@ -541,7 +541,7 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
   SwitchPlate *plate() { return this; }
 
   void redraw() {
-    defer([this]() { (Component) (this->display_)->update(); });
+    defer([this]() { (PollingComponent *) (this->display_)->update(); });
   }
 
  protected:
