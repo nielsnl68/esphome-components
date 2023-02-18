@@ -68,7 +68,7 @@ void SwitchPlate::show() {
     ESP_LOGW(TAG, "no page found");
     return;
   }
-  display()->push_clipping(Rect(0, 0, this->screen_width(), this->screen_height()));
+  display()->start_clipping(Rect(0, 0, this->screen_width(), this->screen_height()));
 
   this->current_page_->call_show();
 
@@ -87,7 +87,7 @@ void SwitchPlate::show() {
       footer->call_show();
     }
   }
-  display()->pop_clipping();
+  display()->end_clipping();
 }
 
 void SwitchPlate::add_page(SwitchPlatePage *page) {

@@ -857,9 +857,9 @@ class SwitchPlateItem : public SwitchPlateBase {
     Rect r = this->get_boundry();
 
     if (this->is_visible() && display()->get_clipping().inside(r)) {
-      display()->push_clipping(r);
+      display()->start_clipping(r);
       this->show();
-      display()->pop_clipping();
+      display()->end_clipping();
     }
     clear_redraw();
   }
@@ -923,7 +923,7 @@ class SwitchPlateGroup : public SwitchPlateItem {
     if (this->is_visible() && display()->get_clipping().inside(this->get_boundry())) {
       Rect r = this->calc_clipping();
       if (r.is_set()) {
-        display()->push_clipping(r);
+        display()->start_clipping(r);
         this->show();
         for (auto *widget : this->widgets_) {
           widget->call_show();
