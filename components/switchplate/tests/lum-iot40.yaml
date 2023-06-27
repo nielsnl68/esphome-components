@@ -72,6 +72,7 @@ color:
     red_int: 96
     green_int: 96
     blue_int: 255
+
 spi:
   mosi_pin: 23
   miso_pin: 19

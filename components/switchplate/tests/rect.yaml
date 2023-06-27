@@ -6,28 +6,34 @@ esphome:
     then:
      - lambda: |-
           Rect r1, r2;
-          r1 = Rect(20,20, 50,50);
+          r1 = Rect(20,20, 50,50); 
           r2 = Rect(20,20, 50,50);
           ESP_LOGW("TAG", "join BASE   (%3d,%3d,%3d,%3d) [%3d,%3d]", r1.x, r1.y, r1.w, r1.h, r1.x2(),r1.y2());
           ESP_LOGW("TAG", "join test 1 (%3d,%3d,%3d,%3d) [%3d,%3d]", r2.x, r2.y, r2.w, r2.h, r2.x2(),r2.y2());
           r1.join(r2);
           ESP_LOGD("TAG", "join result (%3d,%3d,%3d,%3d) [%3d,%3d]", r1.x, r1.y, r1.w, r1.h, r1.x2(),r1.y2());
+          ESP_LOGW("TAG", "");
+
           r1 = Rect(20,20, 50,50);
           r2 = Rect(20,20, 60,50);
           ESP_LOGW("TAG", "join test 2 (%3d,%3d,%3d,%3d) [%3d,%3d]", r2.x, r2.y, r2.w, r2.h, r2.x2(),r2.y2());
           r1.join(r2);
           ESP_LOGD("TAG", "join result (%3d,%3d,%3d,%3d) [%3d,%3d]", r1.x, r1.y, r1.w, r1.h, r1.x2(),r1.y2());
+          ESP_LOGW("TAG", "");
+
           r1 = Rect(20,20, 50,50);
           r2 = Rect(20,20, 40,50);
           ESP_LOGW("TAG", "join test 3 (%3d,%3d,%3d,%3d) [%3d,%3d]", r2.x, r2.y, r2.w, r2.h, r2.x2(),r2.y2());
           r1.join(r2);
           ESP_LOGD("TAG", "join result (%3d,%3d,%3d,%3d) [%3d,%3d]", r1.x, r1.y, r1.w, r1.h, r1.x2(),r1.y2());
-  
+          ESP_LOGW("TAG", "");
+
           r1 = Rect(20,20, 50,50);
           r2 = Rect(30,20, 40,50);
           ESP_LOGW("TAG", "join test 4 (%3d,%3d,%3d,%3d) [%3d,%3d]", r2.x, r2.y, r2.w, r2.h, r2.x2(),r2.y2());
           r1.join(r2);
           ESP_LOGD("TAG", "join result (%3d,%3d,%3d,%3d) [%3d,%3d]", r1.x, r1.y, r1.w, r1.h, r1.x2(),r1.y2());
+          ESP_LOGW("TAG", "");
 
           r1 = Rect(20,20, 50,50);
           r2 = Rect(10,20, 50,50);
