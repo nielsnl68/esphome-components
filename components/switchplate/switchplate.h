@@ -12,12 +12,13 @@
 #ifdef USE_TIME
 #include "esphome/components/time/real_time_clock.h"
 #endif
+
 namespace esphome {
 using display::DisplayBuffer;
 using display::Rect;
 using display::Image;
 using display::Font;
-//using display::GradientDirection;
+
 using display::TextAlign;
 using touchscreen::TouchPoint;
 using touchscreen::TouchListener;
@@ -42,7 +43,6 @@ enum BridgeClasses {
   BRIDGE_BINARY = 2,
   BRIDGE_NUMBER = 3,
 };
-
 
 enum class Align : uint8_t {
   TOP = 0x00,
@@ -107,15 +107,16 @@ enum class Direction : uint8_t {
   BOTH = 23,
 };
 
-class SwitchPlateBase;
-class SwitchPlateGroup;
-class SwitchPlatePage;
+class BaseSwitchPlate;
 class SwitchPlate;
+
+class widget;
+class GroupWidget;
+class PageWidget;
+
 class SwitchPlateStyle;
-class SwitchPlateItem;
 class SwitchPlateStyle;
 class WidgetBridge;
-
 
 class DisplayOnPageChangeTrigger;
 
@@ -278,8 +279,8 @@ struct TouchInfo {
   uint16_t origin_x;
   uint16_t origin_y;
   TouchState state;
-  SwitchPlateBase *origin;
-  SwitchPlateBase *destiny;
+  BaseSwitchPlate *origin;
+  BaseSwitchPlate *destiny;
   uint32_t start_now;
   inline TouchInfo() ALWAYS_INLINE : x(0),
                                      y(0),
@@ -292,7 +293,6 @@ struct TouchInfo {
 };
 
 enum class DoAction : uint8_t { DO_NOTTING, SHOW_HOME, SHOW_PREV, SHOW_NEXT };
-
 
 // ============================================================================== SwitchPlateStyle
 
@@ -311,11 +311,11 @@ class SwitchPlateStyle {
   std::map<uint32_t, Style> styles_{};
 };
 
-// ============================================================================== SwitchPlateBase
+// ============================================================================== BaseSwitchPlate
 
-class SwitchPlateBase : public Parented<SwitchPlateBase> {
+class BaseSwitchPlate : public Parented<BaseSwitchPlate> {
  public:
-  SwitchPlateBase() {}
+  BaseSwitchPlate() {}
 
   virtual uint32_t get_style_class_id() { return Style::NONE; }
 
@@ -341,7 +341,8 @@ class SwitchPlateBase : public Parented<SwitchPlateBase> {
   virtual bool is_visible() { return true; }
   virtual bool is_enabled() { return true; }
 
-  void set_display(display::DisplayBuffer *display) { display_ = display; }
+  virtual void set_display(DisplayBuffer *display) { display_ = display; }
+
   void set_touchscreen(touchscreen::Touchscreen *touchscreen) { touchscreen_ = touchscreen; };
   void set_switchplate(SwitchPlate *plate) { this->switchplate_ = plate; }
 
@@ -356,12 +357,12 @@ class SwitchPlateBase : public Parented<SwitchPlateBase> {
       this->switchplate_ = parent_->plate();
     }
     if (this->switchplate_ == nullptr) {
-      ESP_LOGE("SwitchPlateBase", "  >>-  SwitchPlate has not been set.");
+      ESP_LOGE("BaseSwitchPlate", "  >>-  SwitchPlate has not been set.");
     }
     return (this->switchplate_);
   }
 
-  virtual SwitchPlateBase *check_touch(TouchInfo tp, Rect parent) { return nullptr; }
+  virtual BaseSwitchPlate *check_touch(TouchInfo tp, Rect parent) { return nullptr; }
   virtual void handle_touch(TouchInfo tp) {}
 
   uint32_t find_style_with_status(uint32_t key, Status status) {
@@ -418,7 +419,6 @@ class SwitchPlateBase : public Parented<SwitchPlateBase> {
       this->set_redraw();
     } else {
       thema_()->set(key, var, as_missing);
-      // plate()->set_redraw();
     }
   }
 
@@ -439,7 +439,8 @@ class SwitchPlateBase : public Parented<SwitchPlateBase> {
   virtual void set_redraw() = 0;
 
  protected:
-  display::DisplayBuffer *display_{nullptr};
+  DisplayBuffer *display_{nullptr};
+
   touchscreen::Touchscreen *touchscreen_{nullptr};
 
   SwitchPlate *switchplate_{nullptr};
@@ -451,7 +452,7 @@ class SwitchPlateBase : public Parented<SwitchPlateBase> {
       theme_ = new SwitchPlateStyle();
     }
     if (theme_ == nullptr) {
-      ESP_LOGE("SwitchPlateBase", "  >>-  Theme-style has not been set.");
+      ESP_LOGE("BaseSwitchPlate", "  >>-  Theme-style has not been set.");
     }
     return (theme_);
   }
@@ -460,15 +461,18 @@ class SwitchPlateBase : public Parented<SwitchPlateBase> {
 // =====================================================================================================================
 // SwitchPlate
 
-class SwitchPlate : public Component, public SwitchPlateBase, public TouchListener {
+class SwitchPlate : public Component, public BaseSwitchPlate, public TouchListener {
  public:
   uint32_t get_style_class_id() override { return Style::BASE_SWITCHPLATE; }
 
-  void set_display(display::DisplayBuffer *display) {
+  void set_display(DisplayBuffer *display) override {
     this->display_ = display;
     display->set_writer([this](display::DisplayBuffer &disp_buf) {
       ESP_LOGV(TAG, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-      this->call_show();
+      do { 
+        this->redraw_ = false;
+        this->call_show();
+      } while (this->redraw_);
       ESP_LOGV(TAG, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
     });
   }
@@ -495,9 +499,9 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
     this->set_redraw();
   }
 
-  void add_page(SwitchPlatePage *page);
-  void add_header_widget(SwitchPlateItem *item);
-  void add_footer_widget(SwitchPlateItem *item);
+  void add_page(PageWidget *page);
+  void add_header_widget(Widget *item);
+  void add_footer_widget(Widget *item);
 
   /// Get the width of the image in pixels with rotation applied.
   int16_t screen_width() override { return this->display()->get_width(); }
@@ -505,16 +509,16 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
   /// Get the height of the image in pixels with rotation applied.
   int16_t screen_height() override { return this->display()->get_height(); };
 
-  void show_page(SwitchPlatePage *page);
+  void show_page(PageWidget *page);
 
-  const SwitchPlatePage *current_page() const { return this->current_page_; }
+  const PageWidget *current_page() const { return this->current_page_; }
 
   void show_next();
-  SwitchPlatePage *get_next();
+  PageWidget *get_next();
   bool can_next();
 
   void show_prev();
-  SwitchPlatePage *get_prev();
+  PageWidget *get_prev();
   bool can_prev();
 
   void show_home() { this->show_page(this->first_page_); }
@@ -527,7 +531,7 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
 
   float get_setup_priority() const override { return esphome::setup_priority::HARDWARE; }
 
-  void set_redraw() {}  // TODO: check of we need to do display()->call_update() here.
+  void set_redraw() { this->redraw_ = true; }
 
   void touch(TouchPoint tp);
 
@@ -540,37 +544,32 @@ class SwitchPlate : public Component, public SwitchPlateBase, public TouchListen
 
   SwitchPlate *plate() { return this; }
 
-  void redraw() {
-    ESP_LOGV(TAG, "  -----<<<< ReDraw >>>>------");
-    defer([this]() {
-      // ((PollingComponent *) (this->display_))->update();
-      });
-  }
-
  protected:
   /// High Frequency loop() requester used during sampling phase.
   // HighFrequencyLoopRequester high_freq_;
 
-  std::vector<SwitchPlateItem *> header_;
-  std::vector<SwitchPlateItem *> footer_;
+  std::vector<Widget *> header_;
+  std::vector<Widget *> footer_;
 
   bool tabview_ = false;
   uint16_t header_height_{24};
   uint16_t footer_height_{24};
 
-  SwitchPlatePage *first_page_{nullptr};
-  SwitchPlatePage *current_page_{nullptr};
-  SwitchPlatePage *previous_page_{nullptr};
+  PageWidget *first_page_{nullptr};
+  PageWidget *current_page_{nullptr};
+  PageWidget *previous_page_{nullptr};
 
   TouchInfo touch_info_ = TouchInfo();
+
+  bool redraw_ = false;
 };
 
 // =================================================================================================================
-// SwitchPlateItem
+// Widget
 
-class SwitchPlateItem : public SwitchPlateBase {
+class Widget : public BaseSwitchPlate {
  public:
-  SwitchPlateItem(){};
+  Widget(){};
   void register_bridge(WidgetBridge *obj) { this->bridges_.push_back(obj); }
 
   void update_switches(bool state);
@@ -617,13 +616,13 @@ class SwitchPlateItem : public SwitchPlateBase {
   std::string text() const { return this->old_text_; }
 
   template<typename V> void set_state(V val) { this->state_ = val; }
-  int state() const { return const_cast<SwitchPlateItem *>(this)->state_.value(this); }
+  int state() const { return const_cast<Widget *>(this)->state_.value(this); }
 
   void set_redraw() {
     bool old = this->status_.invalidate;
     this->status_.invalidate = 1;
-    if ((not old) && (display() != nullptr) && (plate() != nullptr)) {
-      plate()->redraw();
+    if ((! old) && (display() != nullptr) && (plate() != nullptr)) {
+      plate()->set_redraw();
     }
   }
 
@@ -703,7 +702,7 @@ class SwitchPlateItem : public SwitchPlateBase {
     return result;
   }
 
-  SwitchPlateBase *check_touch(TouchInfo tp, Rect parent) {
+  BaseSwitchPlate *check_touch(TouchInfo tp, Rect parent) {
     if (this->status_.visible && !this->status_.disabled) {
       Rect r = this->get_boundry();
       r.shrink(parent);
@@ -718,7 +717,6 @@ class SwitchPlateItem : public SwitchPlateBase {
             return this;
           }
           if (this->status_.selectable == 0) {
-
             update_switches(false);
 
             switch (this->action_) {
@@ -777,7 +775,7 @@ class SwitchPlateItem : public SwitchPlateBase {
 
   void set_disable_style();
 
-  bool get_color_definition(uint32_t style, Color &from) { // , Color &to, GradientDirection &dir
+  bool get_color_definition(uint32_t style, Color &from) {  // , Color &to, GradientDirection &dir
     if (this->has_style(style | Style::COLOR, this->status_)) {
       from = this->get_style(style | Style::COLOR, this->status_).color_;
       /*
@@ -794,7 +792,7 @@ class SwitchPlateItem : public SwitchPlateBase {
   }
 
   void show_background() {
-    uint8_t radius = 0; 
+    uint8_t radius = 0;
     if (has_style(Style::BORDER_RADIUS, this->status_)) {
       radius = get_style(Style::BORDER_RADIUS, this->status_).uint32_;
     }
@@ -806,12 +804,12 @@ class SwitchPlateItem : public SwitchPlateBase {
     Color from, to;
     // GradientDirection dir = GradientDirection::GRADIENT_NONE;
 
-    if (this->get_color_definition(Style::BACKGROUND, from/* , to, dir */)) {
-      display()->filled_rectangle(x, y, width, height, /*radius,*/ from/* , to, dir */);
+    if (this->get_color_definition(Style::BACKGROUND, from /* , to, dir */)) {
+      display()->filled_rectangle(x, y, width, height, /*radius,*/ from /* , to, dir */);
     }
 
-    if (this->get_color_definition(Style::BORDER_COLOR, from/* , to, dir */)) {
-      display()->rectangle(x, y, width, height, /*radius,*/ from/* , to, dir */);
+    if (this->get_color_definition(Style::BORDER_COLOR, from /* , to, dir */)) {
+      display()->rectangle(x, y, width, height, /*radius,*/ from /* , to, dir */);
     }
   }
 
@@ -872,14 +870,14 @@ class SwitchPlateItem : public SwitchPlateBase {
   void set_action(DoAction action) { this->action_ = action; }
 
  protected:
-  std::string get_text_() const { return const_cast<SwitchPlateItem *>(this)->text_.value(this); }
-  int get_state_() const { return const_cast<SwitchPlateItem *>(this)->state_.value(this); }
+  std::string get_text_() const { return const_cast<Widget *>(this)->text_.value(this); }
+  int get_state_() const { return const_cast<Widget *>(this)->state_.value(this); }
   bool ENABLED_ = true;
 
-  TemplatableValue<int, const SwitchPlateItem *> state_;
+  TemplatableValue<int, const Widget *> state_;
   int old_state_{0};
 
-  TemplatableValue<std::string, const SwitchPlateItem *> text_;
+  TemplatableValue<std::string, const Widget *> text_;
   std::string old_text_{""};
 
   Rect dimension_;
@@ -891,26 +889,26 @@ class SwitchPlateItem : public SwitchPlateBase {
 };
 
 //  ===============================================================================================================
-//  SwitchPlateGroup
+//  GroupWidget
 
-class SwitchPlateGroup : public SwitchPlateItem {
+class GroupWidget : public Widget {
  public:
-  void add_widget(SwitchPlateItem *widget) {
-    widget->set_parent(this);
-    this->widgets_.push_back(widget);
+  void add_widget(Widget *Widget) {
+    Widget->set_parent(this);
+    this->widgets_.push_back(Widget);
   }
 
   void call_setup() override {
-    SwitchPlateItem::call_setup();
+    Widget::call_setup();
 
     this->setup();
-    for (auto *widget : this->widgets_) {
-      widget->call_setup();
+    for (auto *Widget : this->widgets_) {
+      Widget->call_setup();
     }
   }
-  SwitchPlateBase *check_touch(TouchInfo tp, Rect parent) override {
+  BaseSwitchPlate *check_touch(TouchInfo tp, Rect parent) override {
     Rect r = this->get_boundry();
-    SwitchPlateBase *check;
+    BaseSwitchPlate *check;
     r.shrink(parent);
     if (r.is_set() && (tp.state == TouchState::Pressed)) {
       for (auto it = this->widgets_.rbegin(); it != this->widgets_.rend(); ++it) {
@@ -921,7 +919,7 @@ class SwitchPlateGroup : public SwitchPlateItem {
     }
     ESP_LOGD("SwitchPlate", "  =====> K");
 
-    return SwitchPlateItem::check_touch(tp, parent);
+    return Widget::check_touch(tp, parent);
   }
 
   void call_show() override {
@@ -930,8 +928,8 @@ class SwitchPlateGroup : public SwitchPlateItem {
       if (r.is_set()) {
         display()->start_clipping(r);
         this->show();
-        for (auto *widget : this->widgets_) {
-          widget->call_show();
+        for (auto *Widget : this->widgets_) {
+          Widget->call_show();
         }
         display()->end_clipping();
       }
@@ -940,14 +938,14 @@ class SwitchPlateGroup : public SwitchPlateItem {
   }
 
   size_t items_size() const { return this->widgets_.size(); }
-  SwitchPlateBase *item(size_t i) { return this->widgets_[i]; }
+  BaseSwitchPlate *item(size_t i) { return this->widgets_[i]; }
 
   Rect calc_child_clipping() override {
     Rect r = Rect();
     if (this->is_visible()) {
-      for (auto *widget : this->widgets_) {
-        if (widget->need_redrawing()) {
-          r.extend(widget->get_boundry());
+      for (auto *Widget : this->widgets_) {
+        if (Widget->need_redrawing()) {
+          r.extend(Widget->get_boundry());
         }
       }
     }
@@ -955,13 +953,13 @@ class SwitchPlateGroup : public SwitchPlateItem {
   }
 
  protected:
-  std::vector<SwitchPlateItem *> widgets_;
+  std::vector<Widget *> widgets_;
 };
 
 // =================================================================================================================
-// SwitchPlatePage
+// PageWidget
 
-class SwitchPlatePage : public SwitchPlateGroup {
+class PageWidget : public GroupWidget {
  public:
   uint32_t get_widget_id() { return Style::WIDGET_PAGE; }
 
@@ -977,12 +975,12 @@ class SwitchPlatePage : public SwitchPlateGroup {
   virtual int16_t height() { return this->screen_height(); }
   virtual int16_t width() { return this->screen_width(); }
 
-  void set_next(SwitchPlatePage *next);
-  SwitchPlatePage *get_next() { return this->next_; }
+  void set_next(PageWidget *next);
+  PageWidget *get_next() { return this->next_; }
   bool can_next() { return this->next_ != nullptr; }
 
-  void set_prev(SwitchPlatePage *prev);
-  SwitchPlatePage *get_prev() { return this->prev_; }
+  void set_prev(PageWidget *prev);
+  PageWidget *get_prev() { return this->prev_; }
   bool can_prev() { return this->prev_ != nullptr; }
 
   void select() { ((SwitchPlate *) this->parent_)->show_page(this); }
@@ -991,15 +989,15 @@ class SwitchPlatePage : public SwitchPlateGroup {
   std::string get_title() const { return this->title_; }
 
  protected:
-  SwitchPlatePage *prev_{nullptr};
-  SwitchPlatePage *next_{nullptr};
+  PageWidget *prev_{nullptr};
+  PageWidget *next_{nullptr};
   std::string title_{""};
 };
 
 /// ===============================================================================================================
-/// SwitchPlateLabel
+/// LabelWidget
 
-class SwitchPlateLabel : public SwitchPlateItem {
+class LabelWidget : public Widget {
  public:
   uint32_t get_style_class_id() override { return Style::WIDGET_LABEL; }
 
@@ -1007,7 +1005,7 @@ class SwitchPlateLabel : public SwitchPlateItem {
     set_disable_style();
 
     if (this->plate() == nullptr) {
-      ESP_LOGE("SwitchPlateLabel", "  >>-  SwitchPlate has not been set.");
+      ESP_LOGE("LabelWidget", "  >>-  SwitchPlate has not been set.");
     } else {
       Font *font = this->plate()->get_style(Style::FONT).font_;
       this->set_style(Style::TEXT_FONT, font, true);
@@ -1021,9 +1019,9 @@ class SwitchPlateLabel : public SwitchPlateItem {
     Align align = this->get_style(Style::TEXT_ALIGN).align_;
     Font *font = this->get_style(Style::TEXT_FONT).font_;
     Color from, to;
-   //  GradientDirection dir = GradientDirection::GRADIENT_NONE;
+    //  GradientDirection dir = GradientDirection::GRADIENT_NONE;
 
-    this->get_color_definition(Style::TEXT, from/* , to, dir */);
+    this->get_color_definition(Style::TEXT, from /* , to, dir */);
     show_background();
     calc_text_alignment(font, align, x, y);
     display()->print(x, y, font, from, (TextAlign) align, text().c_str());
@@ -1039,18 +1037,18 @@ class SwitchPlateLabel : public SwitchPlateItem {
 };
 
 /// ============================================================================================================
-/// SwitchPlateDateTime
+/// DateTimeWidget
 
-class SwitchPlateDateTime : public SwitchPlateLabel {
+class DateTimeWidget : public LabelWidget {
  public:
   uint32_t get_style_class_id() override { return Style::WIDGET_DATETIME; }
   void setup() override {
-    SwitchPlateLabel::setup();
+    LabelWidget::setup();
 #ifdef USE_TIME
     auto *time = *this->time_;
     auto format = this->format_;
     time->add_on_time_sync_callback([this] { this->time_synced(); });
-    set_text([=](const switch_plate::SwitchPlateItem *it) -> std::string {
+    set_text([=](const switch_plate::Widget *it) -> std::string {
       if (this->time_synced_) {
         return (*time).now().strftime(format);
       } else {
@@ -1080,29 +1078,29 @@ class SwitchPlateDateTime : public SwitchPlateLabel {
 };
 
 // ============================================================================================================
-// SwitchPlatePageTitle
+// PageTitleWidget
 
-class SwitchPlatePageTitle : public SwitchPlateLabel {
+class PageTitleWidget : public LabelWidget {
  public:
   uint32_t get_style_class_id() override { return Style::WIDGET_PAGETITLE; }
   void setup() override {
-    SwitchPlateLabel::setup();
+    LabelWidget::setup();
     SwitchPlate *myplate = plate();
     set_text(
-        [=](const switch_plate::SwitchPlateItem *it) -> std::string { return myplate->current_page()->get_title(); });
+        [=](const switch_plate::Widget *it) -> std::string { return myplate->current_page()->get_title(); });
   }
 };
 
 // ===============================================================================================================
-// SwitchPlateButton
+// ButtonWidget
 
-class SwitchPlateButton : public SwitchPlateLabel {
+class ButtonWidget : public LabelWidget {
  public:
   uint32_t get_style_class_id() override { return Style::WIDGET_BUTTON; }
 
   void setup() override {
     this->set_style(Style::TEXT_ALIGN, Align::CENTER, true);
-    SwitchPlateLabel::setup();
+    LabelWidget::setup();
     this->set_style(Style::BORDER_RADIUS, 10, true);
 
     this->set_style(Style::BORDER_COLOR, Color(0xDDDDDD), true);
@@ -1116,9 +1114,9 @@ class SwitchPlateButton : public SwitchPlateLabel {
 };
 
 // ================================================================================================================
-// SwitchPlateImage
+// ImageWidget
 
-class SwitchPlateImage : public SwitchPlateItem {
+class ImageWidget : public Widget {
  public:
   void setup() override {
     set_disable_style();
@@ -1126,7 +1124,7 @@ class SwitchPlateImage : public SwitchPlateItem {
     this->set_style(Style::IMAGE | Style::COLOR, Color(0xFFFFFF), true);
     this->set_style(Style::BACKGROUND_COLOR, Color(0x000000), true);
     auto *image = this->get_style(Style::IMAGE | Style::ID, this->status_).image_;
-    set_state([=](const switch_plate::SwitchPlateItem *it) -> int { return image->get_current_frame(); });
+    set_state([=](const switch_plate::Widget *it) -> int { return image->get_current_frame(); });
   };
   void show() override {
     show_background();
@@ -1140,9 +1138,9 @@ class SwitchPlateImage : public SwitchPlateItem {
 };
 
 // ================================================================================================================
-// SwitchPlatePanel
+// PanelWidget
 
-class SwitchPlatePanel : public SwitchPlateGroup {
+class PanelWidget : public GroupWidget {
  public:
   void setup() override {
     set_disable_style();
@@ -1152,9 +1150,9 @@ class SwitchPlatePanel : public SwitchPlateGroup {
 };
 
 // ================================================================================================================
-// SwitchPlateSwitch
+// SwitchWidget
 
-class SwitchPlateSwitch : public SwitchPlateButton {
+class SwitchWidget : public ButtonWidget {
  public:
   void setup() override {
     this->set_style(Style::TEXT_ALIGN, Align::CENTER, true);
@@ -1177,9 +1175,8 @@ class SwitchPlateSwitch : public SwitchPlateButton {
     this->set_style(Style::BACKGROUND_COLOR | Style::PRESS | Style::SELECT, Color(0x007700), true);
     this->set_style(Style::FOREGROUND | Style::COLOR | Style::PRESS | Style::SELECT, Color(0x00EE00), true);
 
-    SwitchPlateButton::setup();
+    ButtonWidget::setup();
     this->status_.selectable = 1;
-
   };
 
   void show() override {
@@ -1220,9 +1217,9 @@ class SwitchPlateSwitch : public SwitchPlateButton {
     }
     show_background(this->x(), this->y(), width, height, radius);
     Color from, to;
-   //  GradientDirection dir = GradientDirection::GRADIENT_NONE;
+    //  GradientDirection dir = GradientDirection::GRADIENT_NONE;
 
-    this->get_color_definition(Style::FOREGROUND, from/* , to, dir */);
+    this->get_color_definition(Style::FOREGROUND, from /* , to, dir */);
     if (status_.selected == 0) {
       x_off = x() + 2;
       y_off = y() + 2;
@@ -1231,28 +1228,26 @@ class SwitchPlateSwitch : public SwitchPlateButton {
       radius = radius - 2;
     }
 
-    display()->filled_rectangle(x_off, y_off, ribben, ribben, /*radius,*/ from/* , to, dir*/);
+    display()->filled_rectangle(x_off, y_off, ribben, ribben, /*radius,*/ from /* , to, dir*/);
   };
 };
 
-
 // ============================================================================== WidgetBridge
-
 
 class WidgetBridge {
  public:
-  void set_widget(SwitchPlateItem * widget, BridgeClasses bridge) {
+  void set_widget(Widget *widget, BridgeClasses bridge) {
     this->bridge_ = bridge;
     this->widget_ = widget;
     widget->register_bridge(this);
   }
   void set_bridge_class(BridgeClasses bridge) { this->bridge_ = bridge; }
-  BridgeClasses get_bridge() { return  bridge_; }
+  BridgeClasses get_bridge() { return bridge_; }
+
  protected:
   BridgeClasses bridge_{BRIDGE_UNKNOWN};
-  SwitchPlateItem *widget_{nullptr};
+  Widget *widget_{nullptr};
 };
-
 
 }  // namespace switch_plate
 }  // namespace esphome
