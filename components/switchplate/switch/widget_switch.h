@@ -21,7 +21,7 @@ class WidgetSwitch : public WidgetBridge, public switch_::Switch, public Compone
  public:
   void setup() override;
   void dump_config() override;
-  float get_setup_priority() const override { return setup_priority::HARDWARE - 1.0f; }
+  float get_setup_priority() const override { return setup_priority::AFTER_CONNECTION; }
 
   void set_restore_mode(WidgetSwitchRestoreMode restore_mode) { restore_mode_ = restore_mode; }
   void set_duration(uint32_t duration) { duration_ = duration; }
@@ -31,6 +31,7 @@ class WidgetSwitch : public WidgetBridge, public switch_::Switch, public Compone
   WidgetSwitchRestoreMode restore_mode_{WIDGET_SWITCH_RESTORE_FROM_SERVER};
 
   uint32_t duration_{0};
+  bool initial_{true};
 };
 
 }  // namespace switch_plate

@@ -102,14 +102,14 @@ void SwitchPlate::add_page(SwitchPlatePage *page) {
   }
 }
 
-void SwitchPlate::add_header_widget(SwitchPlateItem *item) {
+void SwitchPlate::add_header_widget(Widget *item) {
   item->set_parent(this);
   item->set_display(this->display_);
   item->set_switchplate(this);
   this->header_.push_back(item);
 }
 
-void SwitchPlate::add_footer_widget(SwitchPlateItem *item) {
+void SwitchPlate::add_footer_widget(Widget *item) {
   item->set_parent(this);
   item->set_display(this->display_);
   item->set_switchplate(this);
@@ -208,16 +208,16 @@ void SwitchPlate::touch(TouchPoint tpoint) {
 void SwitchPlatePage::set_prev(SwitchPlatePage *prev) { this->prev_ = prev; }
 void SwitchPlatePage::set_next(SwitchPlatePage *next) { this->next_ = next; }
 
-void SwitchPlateItem::show_image(int16_t offset_x, int16_t offset_y, Image *image, Color color_on, Color color_off) {
+void Widget::show_image(int16_t offset_x, int16_t offset_y, Image *image, Color color_on, Color color_off) {
   Color color;
   int16_t width = image->get_width(), height = image->get_height();   // NOLINT
   Rect r = this->get_boundry();  // NOLINT
-  //r.info("widget");
+  //r.info("Widget");
   int16_t x_org = r.x, y_org = r.y;
   Rect clip = display()->get_clipping();
   //clip.info("clip");
   r.shrink(clip);
-  r.info("Cliped widget");
+  r.info("Cliped Widget");
   //ESP_LOGI(TAG,"x_org:%d , y_org:%d | offset_x:%d, offset_x:%d | width:%d, height:%d ",offset_x, offset_y, x_org, y_org, height, width);
   x_org = x_org - r.x;
   y_org = y_org - r.y;
@@ -265,7 +265,7 @@ void SwitchPlateItem::show_image(int16_t offset_x, int16_t offset_y, Image *imag
   }
 }
 
-void SwitchPlateItem::set_disable_style() {
+void Widget::set_disable_style() {
   this->set_style(Style::BORDER_COLOR | Style::DISABLE, Color(0x000000), true);
   this->set_style(Style::IMAGE | Style::COLOR | Style::DISABLE, Color(0x777777), true);
   this->set_style(Style::TEXT_COLOR | Style::DISABLE, Color(0x777777), true);
@@ -274,7 +274,7 @@ void SwitchPlateItem::set_disable_style() {
  //if ((action_ == DoAction::SHOW_PREV)) status_.disabled = this.plate()->current_page()->can_prev()?0:1;
 }
 
-void SwitchPlateItem::update_switches(bool state) {
+void Widget::update_switches(bool state) {
 
   for (auto *t : bridges_) {
     switch (t->get_bridge() ) {

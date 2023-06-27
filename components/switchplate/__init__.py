@@ -121,12 +121,12 @@ SwitchPlate = openHASP_ns.class_("SwitchPlate", cg.Component)
 
 StyleStruct = openHASP_ns.struct("Style")
 
-SwitchPlateItem = openHASP_ns.class_("SwitchPlateItem")
-SwitchPlateItemConstPtr = SwitchPlateItem.operator("ptr").operator("const")
+Widget = openHASP_ns.class_("Widget")
+SwitchPlateItemConstPtr = Widget.operator("ptr").operator("const")
 
-SwitchPlateGroup = openHASP_ns.class_("SwitchPlateGroup")
+GroupWidget = openHASP_ns.class_("GroupWidget")
 
-SwitchPlatePage = openHASP_ns.class_("SwitchPlatePage")
+PageWidget = openHASP_ns.class_("PageWidget")
 
 SwitchPlateIsPageCondition = openHASP_ns.class_(
     "SwitchPlateIsPageCondition", automation.Action
@@ -286,25 +286,25 @@ CONF_GRANDIENT_DIRECTIONS = {
 
 
 CONF_WIDGET_CLASSES = {
-    WIDGET_LINE: openHASP_ns.class_("SwitchPlateLine", SwitchPlateItem),
-    WIDGET_IMAGE: openHASP_ns.class_("SwitchPlateImage", SwitchPlateItem),
-    WIDGET_SPINNER: openHASP_ns.class_("SwitchPlateSpinner", SwitchPlateItem),
-    WIDGET_PANEL: openHASP_ns.class_("SwitchPlateGroup", SwitchPlateItem),
-    WIDGET_LED: openHASP_ns.class_("SwitchPlateLed", SwitchPlateItem),
-    WIDGET_LABEL: openHASP_ns.class_("SwitchPlateLabel", SwitchPlateItem),
-    WIDGET_PAGETITLE: openHASP_ns.class_("SwitchPlatePageTitle", SwitchPlateItem),
-    WIDGET_DATETIME: openHASP_ns.class_("SwitchPlateDateTime", SwitchPlateItem),
-    WIDGET_BUTTON: openHASP_ns.class_("SwitchPlateButton", SwitchPlateItem),
-    WIDGET_SWITCH: openHASP_ns.class_("SwitchPlateSwitch", SwitchPlateItem),
-    WIDGET_CHECKBOX: openHASP_ns.class_("SwitchPlateCheckbox", SwitchPlateItem),
-    WIDGET_DROPDOWN: openHASP_ns.class_("SwitchPlateDropdown", SwitchPlateItem),
-    WIDGET_ROLLER: openHASP_ns.class_("SwitchPlateRoller", SwitchPlateItem),
-    WIDGET_CPICKER: openHASP_ns.class_("SwitchPlateColorPicker", SwitchPlateItem),
-    WIDGET_PROGRESSBAR: openHASP_ns.class_("SwitchPlateProgressBar", SwitchPlateItem),
-    WIDGET_SLIDER: openHASP_ns.class_("SwitchPlateSlider", SwitchPlateItem),
-    WIDGET_ARC: openHASP_ns.class_("SwitchPlateArc", SwitchPlateItem),
-    WIDGET_LINEMETER: openHASP_ns.class_("SwitchPlateLineMeter", SwitchPlateItem),
-    WIDGET_GUAUGE: openHASP_ns.class_("SwitchPlateGauge", SwitchPlateItem),
+    WIDGET_LINE: openHASP_ns.class_("SwitchPlateLine", Widget),
+    WIDGET_IMAGE: openHASP_ns.class_("ImageWidget", Widget),
+    WIDGET_SPINNER: openHASP_ns.class_("SwitchPlateSpinner", Widget),
+    WIDGET_PANEL: openHASP_ns.class_("GroupWidget", Widget),
+    WIDGET_LED: openHASP_ns.class_("SwitchPlateLed", Widget),
+    WIDGET_LABEL: openHASP_ns.class_("LabelWidget", Widget),
+    WIDGET_PAGETITLE: openHASP_ns.class_("PageTitleWidget", Widget),
+    WIDGET_DATETIME: openHASP_ns.class_("DateTimeWidget", Widget),
+    WIDGET_BUTTON: openHASP_ns.class_("ButtonWidget", Widget),
+    WIDGET_SWITCH: openHASP_ns.class_("SwitchWidget", Widget),
+    WIDGET_CHECKBOX: openHASP_ns.class_("SwitchPlateCheckbox", Widget),
+    WIDGET_DROPDOWN: openHASP_ns.class_("SwitchPlateDropdown", Widget),
+    WIDGET_ROLLER: openHASP_ns.class_("SwitchPlateRoller", Widget),
+    WIDGET_CPICKER: openHASP_ns.class_("SwitchPlateColorPicker", Widget),
+    WIDGET_PROGRESSBAR: openHASP_ns.class_("SwitchPlateProgressBar", Widget),
+    WIDGET_SLIDER: openHASP_ns.class_("SwitchPlateSlider", Widget),
+    WIDGET_ARC: openHASP_ns.class_("SwitchPlateArc", Widget),
+    WIDGET_LINEMETER: openHASP_ns.class_("SwitchPlateLineMeter", Widget),
+    WIDGET_GUAUGE: openHASP_ns.class_("SwitchPlateGauge", Widget),
 }
 
 
@@ -645,7 +645,7 @@ CONFIG_SCHEMA = (
                 cv.ensure_list(
                     cv.Schema(
                         {
-                            cv.GenerateID(): cv.declare_id(SwitchPlatePage),
+                            cv.GenerateID(): cv.declare_id(PageWidget),
                             cv.Optional(CONF_WIDGETS): cv.All(
                                 cv.ensure_list(switchplate_item_schema),
                                 cv.Length(min=1),
@@ -765,14 +765,14 @@ async def to_code(config):
     await setup_style(var, config)
 
     if CONF_DISPLAY_ID in config:
-        parent = await cg.get_variable(config[CONF_DISPLAY_ID])
-        cg.add(var.set_display(parent))
+        display = await cg.get_variable(config[CONF_DISPLAY_ID])
+        cg.add(var.set_display(display))
     if touchscreen.CONF_TOUCHSCREEN_ID in config:
-        parent = await cg.get_variable(config[touchscreen.CONF_TOUCHSCREEN_ID])
-        cg.add(var.set_touchscreen(parent))
+        ts = await cg.get_variable(config[touchscreen.CONF_TOUCHSCREEN_ID])
+        cg.add(var.set_touchscreen(ts))
     if CONF_DEFAULT_FONT in config:
-        parent = await cg.get_variable(config[CONF_DEFAULT_FONT])
-        cg.add(var.set_default_font(parent))
+        font = await cg.get_variable(config[CONF_DEFAULT_FONT])
+        cg.add(var.set_default_font(font))
     if CONF_TABVIEW in config:
         cg.add(var.set_tabview(config[CONF_TABVIEW]))
     if CONF_THEMA in config:
