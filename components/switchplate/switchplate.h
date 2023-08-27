@@ -1123,9 +1123,12 @@ class ImageWidget : public Widget {
 
     this->set_style(Style::IMAGE | Style::COLOR, Color(0xFFFFFF), true);
     this->set_style(Style::BACKGROUND_COLOR, Color(0x000000), true);
-    auto *image = this->get_style(Style::IMAGE | Style::ID, this->status_).image_;
-    set_state([=](const switch_plate::Widget *it) -> int { return image->get_current_frame(); });
+    auto *animation = dynamic_cast<display::Animation*>(this->get_style(Style::IMAGE | Style::ID, this->status_).image_);
+    if (animation) {
+      set_state([=](const switch_plate::Widget *it) -> int { return animation->get_current_frame(); });
+    }
   };
+
   void show() override {
     show_background();
     auto *image = this->get_style(Style::IMAGE | Style::ID, this->status_).image_;
